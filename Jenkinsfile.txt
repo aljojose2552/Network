@@ -1,0 +1,49 @@
+pipeline {
+    agent any
+    environment {
+        IMAGE_NAME = "simple-html-app"  // Docker image name
+        CONTAINER_NAME = "html-container"  // Docker container name
+    }
+    stages {
+        stage('Clone Repository') {
+            steps {
+                // Clone the Git repository
+                git branch: 'main', url: 'https://github.com/TintuMariyamPaul/index.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build the Docker image using the Dockerfile
+                    sh "docker build -t ${IMAGE_NAME} ."
+                }
+            }
+        }
+
+        stage('Deploy in Docker Container') {
+            steps {
+                script {
+                    // Stop and remove any running container with the same name
+                    sh "docker stop ${CONTAINER_NAME} || true"
+                    sh "docker rm ${CONTAINER_NAME} || true"
+
+                    // Run a new container from the built image
+                    sh "docker run -d --name ${CONTAINER_NAME} -p 80:80 ${IMAGE_NAME}"
+                }
+            }
+        }
+    }
+    post {
+        always {
+            // Clean workspace after the build
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline succeeded and the application is deployed in Docker!'
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
+    }
+}
