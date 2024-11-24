@@ -4,14 +4,16 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                checkout scmGit(
-                    branches: [[name: '*/main']],
-                    extensions: [],
-                    userRemoteConfigs: [[
-                        credentialsId: 'githubtoken',
-                        url: 'https://github.com/aljojose2552/Network.git'
-                    ]]
-                )
+                script {
+                    checkout scmGit(
+                        branches: [[name: '*/main']],
+                        extensions: [],
+                        userRemoteConfigs: [[
+                            credentialsId: 'githubtoken',  // Replace with your Jenkins credential ID
+                            url: 'https://github.com/aljojose2552/Network.git'
+                        ]]
+                    )
+                }
             }
         }
         stage('Build Docker Image') {
@@ -26,7 +28,7 @@ pipeline {
                 script {
                     // Stop and remove the existing container if it exists
                     sh '''
-                    if [ $(docker ps -aq -f name=html-sample) ]; then
+                    if [ $(docker ps -aq -f name=my-container) ]; then
                         docker stop my-container
                         docker rm my-container
                     fi
@@ -42,7 +44,7 @@ pipeline {
     post {
         always {
             script {
-                // Optional cleanup of old unused images
+                // Optional cleanup of unused Docker images
                 sh 'docker image prune -f'
             }
         }
