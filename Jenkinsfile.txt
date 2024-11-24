@@ -1,49 +1,50 @@
 pipeline {
     agent any
-    environment {
-        IMAGE_NAME = "simple-html-app"  // Docker image name
-        CONTAINER_NAME = "html-container"  // Docker container name
-    }
+
     stages {
         stage('Clone Repository') {
             steps {
-                // Clone the Git repository
-                git branch: 'main', url: 'https://github.com/TintuMariyamPaul/index.git'
+                checkout scmGit(
+                    branches: [[name: '*/main']],
+                    extensions: [],
+                    userRemoteConfigs: [[
+                        credentialsId: 'githubtoken',
+                        url: 'https://github.com/aljojose2552/Network.git'
+                    ]]
+                )
             }
         }
-
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build the Docker image using the Dockerfile
-                    sh "docker build -t ${IMAGE_NAME} ."
+                    sh 'docker build -t my-docker-image:latest .'
                 }
             }
         }
-
-        stage('Deploy in Docker Container') {
+        stage('Deploy Docker Container') {
             steps {
                 script {
-                    // Stop and remove any running container with the same name
-                    sh "docker stop ${CONTAINER_NAME} || true"
-                    sh "docker rm ${CONTAINER_NAME} || true"
+                    // Stop and remove the existing container if it exists
+                    sh '''
+                    if [ $(docker ps -aq -f name=html-sample) ]; then
+                        docker stop my-container
+                        docker rm my-container
+                    fi
+                    '''
 
-                    // Run a new container from the built image
-                    sh "docker run -d --name ${CONTAINER_NAME} -p 80:80 ${IMAGE_NAME}"
+                    // Run the new container with the latest image
+                    sh 'docker run -d -p 3000:80 --name my-container my-docker-image:latest'
                 }
             }
         }
     }
+
     post {
         always {
-            // Clean workspace after the build
-            cleanWs()
-        }
-        success {
-            echo 'Pipeline succeeded and the application is deployed in Docker!'
-        }
-        failure {
-            echo 'Pipeline failed.'
+            script {
+                // Optional cleanup of old unused images
+                sh 'docker image prune -f'
+            }
         }
     }
 }
